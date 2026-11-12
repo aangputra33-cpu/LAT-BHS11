@@ -1,0 +1,426 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Try Out TKA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: layar identitas dua kolom (panel hero + formulir), layar ujian dengan bilah timer menempel di atas, soal di kiri, navigasi nomor di kanan; layar hasil berisi skor besar lalu pembahasan yang bisa disaring. */
+:root{
+  --bg:#f2f7f6; --surface:#ffffff; --ink:#14282b; --muted:#587074; --line:#d3e0df;
+  --primary:#0e7c7b; --on-primary:#ffffff; --primary-soft:#d8f0ee; --primary-deep:#0a4f55;
+  --accent:#f4b63f; --on-accent:#3a2900;
+  --ragu:#f0a21a; --on-ragu:#3a2600; --ragu-soft:#fdeccb;
+  --good:#1b8f5a; --good-soft:#d9f3e6; --bad:#d23f3f; --bad-soft:#fbe0de; --empty-soft:#e8eeee;
+  --ring-bg:#d3e0df; --shadow:0 1px 2px rgba(20,40,43,.06),0 6px 20px rgba(20,40,43,.06);
+  --font-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --font-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1b1d; --surface:#162a2d; --ink:#e5f1f0; --muted:#93adb0; --line:#294145;
+  --primary:#2bb3ae; --on-primary:#04201f; --primary-soft:#143c3e; --primary-deep:#0a3a40;
+  --accent:#f4b63f; --on-accent:#3a2900;
+  --ragu:#f0a21a; --on-ragu:#2e1d00; --ragu-soft:#3b2f12;
+  --good:#4cd08c; --good-soft:#13392a; --bad:#ff7d76; --bad-soft:#431f1f; --empty-soft:#1f3236;
+  --ring-bg:#294145; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1b1d; --surface:#162a2d; --ink:#e5f1f0; --muted:#93adb0; --line:#294145;
+  --primary:#2bb3ae; --on-primary:#04201f; --primary-soft:#143c3e; --primary-deep:#0a3a40;
+  --accent:#f4b63f; --on-accent:#3a2900;
+  --ragu:#f0a21a; --on-ragu:#2e1d00; --ragu-soft:#3b2f12;
+  --good:#4cd08c; --good-soft:#13392a; --bad:#ff7d76; --bad-soft:#431f1f; --empty-soft:#1f3236;
+  --ring-bg:#294145; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:20;background:var(--primary-deep)}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;line-height:1.15;margin:0}
+p{margin:0}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1160px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* tombol */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 20px;border-radius:12px;border:2px solid transparent;font-weight:700;cursor:pointer;background:var(--primary);color:var(--on-primary)}
+.btn:hover{filter:brightness(1.07)}
+.btn[disabled]{opacity:.4;cursor:not-allowed;filter:none}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--primary)}
+.btn.ragu{background:var(--surface);color:var(--ink);border-color:var(--ragu)}
+.btn.ragu.on{background:var(--ragu);color:var(--on-ragu)}
+.btn.warn{background:var(--accent);color:var(--on-accent)}
+.btn.small{min-height:38px;padding:6px 14px;font-size:14px}
+
+/* layar identitas */
+.start{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
+.hero{background:var(--primary-deep);color:#fff;padding-block:56px;display:flex;align-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:32px}
+.hero-in{max-width:480px;margin-left:auto;display:flex;flex-direction:column;gap:22px}
+.eyebrow{font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+.hero h1{font-size:clamp(44px,7vw,72px);font-weight:800;letter-spacing:-.02em}
+.hero .sub{font-size:19px;opacity:.9}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 0;padding:0;list-style:none}
+.facts li{background:rgba(255,255,255,.1);border-radius:14px;padding:12px 14px}
+.facts b{display:block;font-family:var(--font-display);font-size:30px;line-height:1.1}
+.facts span{font-size:13px;opacity:.85}
+.demo{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:13px}
+.demo span{display:inline-flex;align-items:center;gap:8px}
+.chip{width:24px;height:24px;border-radius:7px;display:inline-block;border:2px solid transparent}
+.chip.ans{background:var(--primary);border-color:#7fd9d4}
+.chip.ragu{background:var(--ragu)}
+.chip.none{background:transparent;border-color:rgba(255,255,255,.55)}
+.formside{display:flex;align-items:center;padding-block:40px;padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:32px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:28px}
+.formside .card{width:100%;max-width:480px;display:flex;flex-direction:column;gap:18px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:700;font-size:14px}
+.field input{min-height:48px;border-radius:12px;border:2px solid var(--line);background:var(--bg);padding:8px 14px}
+.field input:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px var(--primary-soft)}
+.field input.err{border-color:var(--bad)}
+.errmsg{color:var(--bad);font-size:14px;font-weight:600;min-height:20px}
+.note{font-size:13px;color:var(--muted)}
+
+/* bilah ujian */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--primary-deep);color:#fff}
+.bar .wrap{display:flex;align-items:center;gap:16px;min-height:64px;padding-block:8px}
+.brand{display:flex;flex-direction:column;min-width:0;flex:1}
+.brand b{font-family:var(--font-display);font-size:18px;line-height:1.2}
+.brand span{font-size:13px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{flex:1.2;min-width:0;display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.track{height:8px;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden}
+.track i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.timer{display:inline-flex;flex-direction:column;align-items:center;background:var(--accent);color:var(--on-accent);border-radius:14px;padding:6px 14px;line-height:1.1}
+.timer small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.timer b{font-family:var(--font-display);font-size:24px}
+.timer.low{background:var(--bad);color:#fff}
+
+/* layar ujian */
+.exam{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;padding-block:24px 48px;align-items:start}
+.qcard{display:flex;flex-direction:column;gap:18px}
+.qhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.qno{font-family:var(--font-display);font-weight:800;font-size:15px;background:var(--primary);color:var(--on-primary);border-radius:10px;padding:4px 12px}
+.tag{font-size:13px;font-weight:700;border-radius:99px;padding:3px 12px;background:var(--ragu);color:var(--on-ragu)}
+.stim{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stim h3{font-size:17px}
+.stim .dl{display:grid;grid-template-columns:minmax(64px,auto) 1fr;gap:4px 12px}
+.stim .dl b{color:var(--primary)}
+.stim .dir{font-style:italic;color:var(--muted)}
+.stim.prose p{text-align:justify;hyphens:auto}
+.stim .verse p{min-height:1.4em}
+.intro{font-weight:700;color:var(--primary)}
+.src{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.ph{border:2px dashed var(--line);border-radius:10px;padding:12px 14px;color:var(--muted);font-size:14px}
+.qtext{display:flex;flex-direction:column;gap:10px;font-size:17px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:flex-start;gap:12px;border:2px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;background:var(--surface)}
+.opt:hover{border-color:var(--primary)}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .l{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--empty-soft);color:var(--ink)}
+.opt .t{padding-top:3px;min-width:0;overflow-wrap:anywhere}
+.opt.sel{border-color:var(--primary);background:var(--primary-soft)}
+.opt.sel .l{background:var(--primary);color:var(--on-primary)}
+.opt:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+.nav3{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding-top:6px}
+.nav3 .mid{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px;padding:6px}
+
+.aside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 80px);display:flex;flex-direction:column;gap:16px;padding:20px}
+.aside h2{font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:4px}
+.n{aspect-ratio:1;min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}
+.n:hover{border-color:var(--primary)}
+.n.ans{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.n.ragu{background:var(--ragu);border-color:var(--ragu);color:var(--on-ragu)}
+.n.cur{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ink)}
+.leg{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:13px;margin:0;padding:0;list-style:none}
+.leg li{display:flex;align-items:center;gap:8px}
+.leg .chip{width:20px;height:20px;flex:none}
+.leg .chip.none{border-color:var(--line);background:var(--surface)}
+.leg .chip.cur{border:2px solid var(--line);background:var(--surface);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
+.leg .chip.ans{border-color:var(--primary)}
+
+/* dialog selesai */
+.veil{position:fixed;inset:0;z-index:30;background:rgba(8,20,22,.6);display:grid;place-items:center;padding:16px}
+.dialog{max-width:440px;width:100%;display:flex;flex-direction:column;gap:16px}
+.dialog h2{font-size:24px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.sum div{background:var(--bg);border-radius:12px;padding:10px 6px}
+.sum b{display:block;font-family:var(--font-display);font-size:26px}
+.sum span{font-size:12px;color:var(--muted)}
+.sum .r b{color:var(--ragu)}
+.dialog .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+
+/* hasil */
+.rhero{background:var(--primary-deep);color:#fff;padding-block:40px}
+.rhero .wrap{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center}
+.score{--p:0;width:200px;height:200px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*1%),rgba(255,255,255,.18) 0);display:grid;place-items:center}
+.score div{width:164px;height:164px;border-radius:50%;background:var(--primary-deep);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score b{font-family:var(--font-display);font-size:56px;line-height:1;font-weight:800}
+.score span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+.who h1{font-size:clamp(28px,4vw,40px)}
+.who dl{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:14px 0 0;font-size:15px}
+.who dt{opacity:.7}
+.who dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:-26px;position:relative}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px}
+.stat b{display:block;font-family:var(--font-display);font-size:32px;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.g b{color:var(--good)} .stat.b b{color:var(--bad)}
+.rev{padding-block:32px 56px;display:flex;flex-direction:column;gap:18px}
+.rev-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.rev-head h2{font-size:28px}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.f{min-height:40px;padding:6px 16px;border-radius:99px;border:2px solid var(--line);background:var(--surface);font-weight:600;cursor:pointer}
+.f[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.item{display:flex;flex-direction:column;gap:14px;padding:22px}
+.ihead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{font-size:13px;font-weight:700;border-radius:99px;padding:3px 12px}
+.badge.ok{background:var(--good-soft);color:var(--good)}
+.badge.bad{background:var(--bad-soft);color:var(--bad)}
+.badge.empty{background:var(--empty-soft);color:var(--muted)}
+.ropts{display:flex;flex-direction:column;gap:8px}
+.ro{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--line);border-radius:12px;padding:8px 12px}
+.ro .l{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;background:var(--empty-soft)}
+.ro .t{flex:1;min-width:0;overflow-wrap:anywhere;padding-top:2px}
+.ro .m{flex:none;font-size:12px;font-weight:700;padding-top:4px}
+.ro.key{border-color:var(--good);background:var(--good-soft)}
+.ro.key .l{background:var(--good);color:#fff}
+.ro.key .m{color:var(--good)}
+.ro.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.ro.wrong .l{background:var(--bad);color:#fff}
+.ro.wrong .m{color:var(--bad)}
+.why{background:var(--primary-soft);border-radius:12px;padding:14px 16px}
+.why b{display:block;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--primary);margin-bottom:4px}
+.nokey{color:var(--muted);font-size:14px}
+
+@media (max-width:900px){
+  .start{grid-template-columns:1fr;min-height:0}
+  .hero{padding:32px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+  .hero-in{margin:0;max-width:none}
+  .formside{padding:24px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+  .formside .card{max-width:none}
+  .exam{grid-template-columns:minmax(0,1fr)}
+  .aside{position:static}
+  .grid{grid-template-columns:repeat(8,1fr)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:560px){
+  .brand span{display:none}
+  .bar .wrap{gap:10px}
+  .timer{padding:5px 10px}
+  .timer b{font-size:20px}
+  .card{padding:18px}
+  .facts b{font-size:24px}
+  .rhero .wrap{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .who dl{text-align:left}
+  .grid{grid-template-columns:repeat(5,1fr)}
+  .nav3{justify-content:center}
+  .nav3 .btn{flex:1 1 40%}
+  .nav3 .mid{order:-1;width:100%;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<div id="app"></div>
+<script>
+const DATA={"S": {"pesolek": {"title": "Doa Seorang Pesolek (karya: Joko Pinurbo)", "poem": 1, "lines": ["[Tempelkan teks puisi “Doa Seorang Pesolek” karya Joko Pinurbo dari naskah asli di sini]"], "kind": "poem"}, "senja": {"title": "Senja di Pelabuhan Kecil (karya: Chairil Anwar)", "poem": 1, "lines": ["[Tempelkan teks puisi “Senja di Pelabuhan Kecil” karya Chairil Anwar dari naskah asli di sini] — soal ini merujuk pada bait kedua."], "kind": "poem", "extra": "Soal nomor 3 merujuk pada bait kedua puisi ini."}, "aku": {"title": "Aku Ingin (karya: Sapardi Djoko Damono)", "poem": 1, "lines": ["[Tempelkan teks puisi “Aku Ingin” karya Sapardi Djoko Damono dari naskah asli di sini]"], "kind": "poem"}, "doa": {"title": "Doa (karya: Chairil Anwar)", "poem": 1, "lines": ["[Tempelkan teks puisi “Doa” karya Chairil Anwar dari naskah asli di sini]"], "kind": "poem"}, "ibu": {"title": "Ibu (karya: D. Zawawi Imron)", "poem": 1, "lines": ["[Tempelkan teks puisi “Ibu” karya D. Zawawi Imron dari naskah asli di sini]"], "kind": "poem"}, "dipo": {"title": "Diponegoro (karya: Chairil Anwar)", "poem": 1, "lines": ["[Tempelkan teks puisi “Diponegoro” karya Chairil Anwar dari naskah asli di sini]"], "kind": "poem"}, "p19": {"title": "Dua penggalan puisi", "lines": ["Puisi 1:", "Langit senja berwarna luka,", "kata-kata menari dalam sunyi,", "membingkai rasa tanpa suara.", "", "Puisi 2:", "Di jalanan kota penuh debu,", "suara rakyat terbungkam waktu,", "menuntut hak yang lama layu."], "kind": "verse"}, "d21": {"title": "Pilihan di Persimpangan", "lines": ["Dina : (pelan) \"Kamu dari tadi di sini, Rak?\"", "Raka : (menghela napas) \"Iya… aku masih belum yakin dengan keputusan ini, Dina.\"", "Dina : (duduk di samping Raka) \"Keputusan besar memang tidak pernah mudah. Tapi kita tidak bisa terus diam.\"", "Raka : \"Aku tahu… tapi ini terlalu berisiko. Kalau kita gagal, kita bisa kehilangan segalanya.\"", "Dina : (menatap Raka) \"Dan kalau kita tidak mencoba, kita akan kehilangan kesempatan.\"", "Raka : \"Aku takut, Dina. Bukan hanya tentang gagal… tapi tentang apa yang akan terjadi setelahnya.\"", "Dina : \"Ketakutan itu wajar. Tapi jangan sampai ketakutan mengendalikan hidupmu.\"", "Raka : (menunduk) \"Kamu tidak mengerti. Aku punya banyak yang harus dipertaruhkan.\"", "Dina : \"Aku mengerti, Rak. Tapi justru karena itu, kamu harus berani mengambil langkah.\"", "Raka : \"Bagaimana kalau semuanya berakhir buruk?\"", "Dina : (mendekat) \"Kadang, untuk mendapatkan sesuatu yang besar, kita harus berani kehilangan terlebih dahulu.\"", "Raka : (diam sejenak, lalu tersenyum tipis) \"Kamu selalu punya cara untuk meyakinkanku.\"", "Dina : \"Aku hanya ingin kamu tidak menyesal di kemudian hari.\"", "Raka : (menatap Dina) \"Baiklah… aku akan ikut denganmu. Apa pun yang terjadi.\"", "Dina : (tersenyum lega) \"Terima kasih, Rak. Kita hadapi bersama.\"", "(Lampu perlahan redup. Mereka berjalan keluar panggung.)"], "kind": "drama"}, "d23": {"title": "Jalan yang Berbeda", "lines": ["Rina : \"Ayah, aku ingin melanjutkan kuliah ke luar kota.\"", "Ayah : (menurunkan koran) \"Untuk apa jauh-jauh? Di sini juga ada kampus.\"", "Rina : \"Aku ingin mengejar impianku, Yah. Jurusan itu tidak ada di sini.\"", "Ayah : \"Kamu itu perempuan. Tidak perlu jauh-jauh. Nanti siapa yang menjaga kamu?\"", "Rina : (menahan emosi) \"Aku bisa menjaga diriku sendiri, Yah.\"", "Ayah : \"Ayah hanya ingin yang terbaik. Perempuan sebaiknya dekat dengan keluarga.\"", "Rina : \"Tapi masa depan aku juga penting.\"", "Ayah : (diam sejenak) \"Ayah tidak ingin kamu menyesal nanti.\"", "Rina : \"Aku justru akan menyesal kalau tidak mencoba.\"", "(Suasana hening. Ayah terlihat bimbang.)"], "kind": "drama"}, "d24": {"title": "Harmoni dalam Perbedaan", "lines": ["Pak Hasan : \"Kita akan mengadakan acara besar. Semua warga harus terlibat.\"", "Bu Made : \"Betul, tapi kita harus mempertimbangkan keberagaman di desa ini.\"", "Pak Budi : \"Maksudnya?\"", "Bu Made : \"Di desa kita ada berbagai etnis, agama, dan profesi. Kita harus menghargai semuanya.\"", "Rina : \"Saya setuju. Misalnya dalam acara, jangan sampai bertabrakan dengan waktu ibadah.\"", "Pak Hasan : \"Benar juga. Kita harus atur jadwal dengan baik.\"", "Pak Joko : \"Selain itu, kita bisa menampilkan tarian dari berbagai daerah sebagai bentuk keberagaman etnis.\"", "Bu Sari : \"Dan makanan yang disajikan juga harus memperhatikan adat dan kepercayaan masing-masing.\"", "Pak Budi : \"Wah, ternyata banyak yang harus dipertimbangkan ya.\"", "Bu Made : \"Justru itulah indahnya keberagaman, kita bisa saling melengkapi.\"", "(Semua mengangguk setuju)."], "kind": "drama"}, "d26": {"title": "Satu Meja, Banyak Cerita", "lines": ["Andi : \"Eh, kalian bawa makanan apa hari ini?\"", "Lina : \"Aku bawa nasi uduk, resep keluarga dari Betawi.\"", "Made : \"Kalau aku bawa ayam betutu, khas Bali.\"", "Rizal : \"Aku tidak makan itu, aku harus pilih makanan yang halal.\"", "Maria : \"Aku juga tidak makan daging hari ini karena sedang menjalankan ibadah.\"", "Andi : \"Wah, ternyata kita berbeda-beda ya.\"", "Lina : \"Iya, tapi justru seru. Kita bisa saling mengenal budaya masing-masing.\"", "Made : \"Bahkan pekerjaan orang tua kita juga berbeda-beda.\"", "Rizal : \"Yang penting kita saling menghargai.\"", "Maria : \"Perbedaan bukan untuk dipermasalahkan, tapi dipahami.\""], "kind": "drama"}, "d27": {"title": "Pilihan yang Tepat", "lines": ["Dika : \"Aku tidak mau satu kelompok dengan Rendi lagi.\"", "Nina : \"Kenapa? Bukankah dia sudah berusaha membantu?\"", "Dika : \"Iya, tapi caranya berbeda dan sering tidak sesuai dengan caraku.\"", "Rendi : (pelan) \"Aku hanya mencoba memberikan ide terbaikku.\"", "Nina : \"Bukankah perbedaan cara justru bisa membuat hasil lebih baik?\"", "Dika : \"Aku merasa itu malah memperlambat pekerjaan.\"", "Rendi : \"Kalau kita saling mendengarkan, mungkin kita bisa menemukan cara yang lebih baik.\"", "Nina : \"Yang penting bukan siapa yang benar, tapi bagaimana kita bisa bekerja sama.\"", "(Dika terdiam dan mulai berpikir.)"], "kind": "drama"}, "d29": {"title": "Di Balik Layar", "lines": ["Arga : (pelan) \"Mengapa peran ini terasa begitu berat?\"", "(Maya masuk perlahan, berdiri di belakang Arga tanpa disadari.)", "Maya : \"Karena kamu tidak hanya memerankan tokoh itu, tapi juga memahami perasaannya.\"", "Arga : \"Aku takut tidak bisa menyampaikan maknanya kepada penonton.\"", "Maya : \"Penonton tidak hanya melihat gerakanmu, mereka merasakan kejujuranmu.\"", "(Arga menatap panggung kosong, lalu berdiri perlahan.)", "Arga : \"Jadi… aku harus menjadi dirinya, bukan sekadar memerankannya?\"", "Maya : (tersenyum) \"Tepat sekali.\"", "(Lampu perlahan menyala terang, Arga berjalan ke tengah panggung dengan ekspresi lebih yakin.)"], "kind": "drama"}, "t31": {"title": "", "lines": ["Dalam sebuah pertunjukan drama sekolah, ditampilkan kisah tentang sekelompok siswa yang awalnya tidak mau bekerja sama karena perbedaan latar belakang. Salah satu tokoh selalu memaksakan pendapatnya, sementara tokoh lain memilih diam. Konflik semakin memuncak hingga akhirnya mereka menyadari bahwa tanpa saling mendengarkan dan menghargai perbedaan, tujuan bersama tidak akan tercapai. Di akhir pertunjukan, mereka mulai berdiskusi dengan lebih terbuka dan saling menghargai."], "kind": "prose"}, "d32": {"title": "Suara yang Terabaikan", "lines": ["(Latar: Ruang kelas setelah diskusi kelompok.)", "Fajar : \"Kita pakai ideku saja, supaya cepat selesai.\"", "Lukman : \"Tapi ide Rani juga bagus, kenapa tidak dipertimbangkan?\"", "Fajar : \"Kalau terlalu banyak pendapat, nanti malah membingungkan.\"", "Rani : (pelan) \"Aku hanya ingin memberi kontribusi.\"", "Lukman : \"Semua orang berhak didengar dalam kelompok ini.\"", "Fajar : (diam sejenak) \"Mungkin aku terlalu memaksakan pendapatku.\"", "Rani : \"Yang penting kita bisa bekerja sama dengan baik.\"", "(Mereka mulai berdiskusi kembali dengan lebih tenang.)"], "kind": "drama"}, "t34": {"title": "", "lines": ["Sebuah kelompok siswa akan mengadakan pertunjukan drama bertema keberagaman. Namun, jumlah penonton pada pertunjukan sebelumnya sangat sedikit karena promosi yang kurang menarik. Untuk pementasan berikutnya, mereka berencana membuat media promosi seperti poster, video pendek, dan unggahan media sosial. Selain itu, mereka juga ingin meningkatkan kualitas pertunjukan agar lebih menarik dan bermakna bagi penonton."], "kind": "prose"}, "t35": {"title": "", "lines": ["Sebuah tim siswa akan mementaskan drama bertema keberagaman dan konflik sosial dalam sebuah festival sekolah. Pada pementasan sebelumnya, jumlah penonton tergolong rendah meskipun kualitas cerita yang disajikan sudah cukup baik. Setelah dilakukan evaluasi, ditemukan beberapa permasalahan, di antaranya media promosi yang hanya berupa poster sederhana sehingga kurang menarik dan tidak sesuai dengan minat siswa, tidak adanya pemanfaatan media sosial secara optimal untuk menjangkau audiens yang lebih luas, serta tidak ditampilkannya cuplikan pertunjukan sebagai bahan promosi. Selain itu, dalam pertunjukan, beberapa adegan dinilai kurang kuat secara emosional sehingga pesan moral tidak tersampaikan dengan maksimal, serta koordinasi antara tim promosi dan tim produksi masih kurang terintegrasi. Untuk pementasan berikutnya, tim berencana menyusun strategi promosi terpadu melalui poster digital, video teaser, dan media sosial, sekaligus memperkuat kualitas akting serta penyampaian pesan moral dalam pertunjukan, dan menyesuaikan konsep dengan karakteristik penonton remaja. Namun demikian, muncul perbedaan pendapat di dalam tim, di mana sebagian anggota ingin lebih memfokuskan pada visual promosi yang menarik, sementara sebagian lainnya menekankan bahwa kualitas pertunjukan jauh lebih penting dibandingkan promosi."], "kind": "prose"}, "t37": {"title": "", "lines": ["Seorang siswa bernama Arman menemukan dompet di halaman sekolah yang berisi uang dalam jumlah cukup besar dan kartu identitas. Ia sedang berada dalam kondisi sulit karena belum mampu membeli buku pelajaran yang dibutuhkan. Arman sempat mempertimbangkan untuk mengambil sebagian uang tersebut, dengan alasan tidak ada yang akan mengetahui. Namun, ia juga teringat pesan orang tuanya tentang pentingnya kejujuran. Setelah mengalami pergulatan batin, Arman memutuskan untuk mencari pemilik dompet tersebut. Ketika akhirnya bertemu, pemilik dompet ternyata adalah seorang siswa yang juga sedang mengalami kesulitan ekonomi dan sangat membutuhkan uang tersebut."], "kind": "prose"}, "t39": {"title": "", "lines": ["Arman, seorang siswa SMA, menemukan sebuah dompet di koridor sekolah sepulang kelas. Di dalam dompet tersebut terdapat uang dalam jumlah cukup besar serta kartu identitas pemiliknya. Saat itu, Arman sedang mengalami kesulitan karena belum mampu membeli buku pelajaran yang sangat ia butuhkan untuk menghadapi ujian. Ia pun mulai bimbang dan mempertimbangkan untuk mengambil sebagian uang tersebut, dengan keyakinan bahwa tidak ada yang akan mengetahui perbuatannya. Namun, di tengah keraguannya, Arman teringat nasihat orang tuanya tentang pentingnya kejujuran dan tanggung jawab."], "kind": "prose"}}, "Q": [{"s": "pesolek", "q": "Suasana hati yang digambarkan oleh penulis adalah ….", "o": ["kecewa", "marah", "bahagia", "penuh harap", "kehilangan"], "k": "D", "b": "Aku lirik memohon kepada Tuhan agar kecantikannya tidak cepat pudar dan masih sempat menikmati hasrat sebelum waktu “merobek-robek” dirinya. Permohonan yang diulang dengan kata “semoga” menunjukkan suasana hati penuh harap.", "intro": "Cermatilah puisi berikut!", "src": null}, {"s": "pesolek", "q": "Gagasan yang ingin disampaikan penulis melalui puisi tersebut adalah ….", "o": ["harapan agar Tuhan selalu hadir di hidupnya", "keinginan seseorang untuk bisa tampil cantik", "keputusasaan seseorang dengan wajah yang dimilikinya", "harapan seseorang untuk mempertahankan kecantikannya", "kerja keras seseorang untuk mengubah dirinya menjadi cantik"], "k": "D", "b": "Inti puisi adalah doa agar kecantikan tidak lekas usai dan luntur seperti pupur. Jadi gagasannya adalah harapan untuk mempertahankan kecantikan, bukan sekadar ingin tampil cantik (B) karena ada unsur ketakutan akan berlalunya waktu.", "intro": "Cermatilah teks berikut!", "src": null}, {"s": "senja", "q": "Respons emosional yang paling tepat setelah membaca bait kedua puisi di atas adalah ....", "o": ["kemarahan terhadap situasi yang membuat seseorang kehilangan harapan di masa lalu", "kesedihan yang mendalam karena melihat penderitaan orang lain di pelabuhan", "ketakutan akan datangnya maut yang digambarkan melalui simbol elang dan kegelapan", "kehampaan dan kesunyian yang menyesakkan karena perasaan kesendirian yang absolut", "kegelisahan yang mencekam akibat suasana alam yang berubah menjadi badai"], "k": "D", "b": "Bait kedua menampilkan gerimis, kelam, elang yang menyinggung muram, serta “tidak bergerak” dan “tanah dan air tidur hilang ombak”. Gambaran suasana yang mati dan sepi membangkitkan kesan hampa dan sunyi yang menyesakkan.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "aku", "q": "Penggunaan ungkapan “kayu kepada api” dan “awan kepada hujan” dalam puisi tersebut menunjukkan majas yang berfungsi untuk ….", "o": ["memperjelas makna cinta melalui perbandingan implisit antarobjek alam", "memperindah bunyi puisi melalui pengulangan kata yang serasi", "menggambarkan konflik batin penyair secara langsung dan eksplisit", "menegaskan latar tempat terjadinya peristiwa dalam puisi tersebut", "menunjukkan sudut pandang penyair terhadap realitas kehidupan sosial"], "k": "A", "b": "Ungkapan tersebut membandingkan cinta dengan hubungan alam (kayu–api, awan–hujan) tanpa kata pembanding (seperti, bagai), sehingga termasuk metafora/perbandingan implisit yang memperjelas makna cinta.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "aku", "q": "Makna hubungan antara “kayu kepada api” dan “awan kepada hujan” dalam puisi tersebut paling tepat ditafsirkan sebagai representasi tema ….", "o": ["cinta yang sederhana tetapi mengandung pengorbanan mendalam", "cinta yang penuh konflik karena adanya perbedaan kepentingan", "cinta yang terhalang oleh keadaan sosial dan budaya masyarakat", "cinta yang bersifat sementara dan mudah berubah seiring waktu", "cinta yang diwujudkan melalui tindakan nyata tanpa perasaan"], "k": "A", "b": "Kayu rela menjadi abu demi api dan awan rela menjadi tiada demi hujan: pengorbanan yang tulus tanpa pamrih. Hal ini sejalan dengan kata “sederhana” pada baris pertama tiap bait.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "aku", "q": "Amanat yang dapat diambil dari puisi tersebut adalah ….", "o": ["mencintai dengan tulus tanpa perlu banyak ungkapan berlebihan", "mencintai harus selalu diungkapkan secara terbuka dan jelas", "hubungan cinta harus dipertahankan dengan berbagai cara", "cinta harus diperjuangkan meskipun penuh konflik", "cinta sebaiknya dihindari karena penuh risiko"], "k": "A", "b": "Penyair ingin mencintai “dengan sederhana”, melalui kata dan isyarat yang tak sempat diucapkan. Amanatnya: cinta yang tulus tidak membutuhkan ungkapan berlebihan.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "aku", "q": "Diksi “tak sempat” dalam puisi tersebut mengandung makna ….", "o": ["adanya keterbatasan dalam mengungkapkan perasaan cinta", "adanya konflik besar dalam hubungan percintaan yang rumit", "adanya keinginan untuk mengakhiri hubungan percintaan", "adanya perbedaan latar belakang sosial dalam menjalin hubungan", "adanya tekanan dari lingkungan sekitar dalam menjalani hubungan"], "k": "A", "b": "“Tak sempat diucapkan/disampaikan” menunjukkan perasaan cinta yang tidak terungkap sepenuhnya, yaitu ada keterbatasan dalam mengungkapkannya.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "doa", "q": "Ungkapan “caya-Mu panas suci” menunjukkan majas ….", "o": ["metafora yang menggambarkan kebesaran Tuhan secara simbolik", "hiperbola yang melebih-lebihkan kondisi alam secara ekstrem", "ironi yang menyatakan hal berlawanan dengan kenyataan", "personifikasi yang memberi sifat manusia pada benda mati", "repetisi yang mengulang kata untuk memperindah bunyi"], "k": "A", "b": "Cahaya Tuhan digambarkan secara simbolik sebagai sesuatu yang “panas suci” tanpa kata pembanding; ini metafora yang menggambarkan kebesaran dan kesucian Tuhan.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "doa", "q": "Nada puisi tersebut adalah ….", "o": ["penuh kerendahan hati dan kepasrahan kepada Tuhan", "penuh kemarahan terhadap keadaan hidup yang dilematis", "penuh semangat dalam menghadapi tantangan kehidupan", "sinis terhadap kehidupan manusia yang penuh tantangan", "santai dan tanpa beban dalam menjalani hidup"], "k": "A", "b": "Aku lirik mengaku “hilang bentuk, remuk” namun tetap mengetuk pintu Tuhan dan “tidak bisa berpaling”. Ini menunjukkan nada rendah hati dan pasrah.", "intro": "Cermati kutipan puisi berikut!", "src": "Sumber: Kumpulan puisi Deru Campur Debu (1949) https://roboguru.ruangguru.com/question/bacalah-puisi-berikut-doa-karya-chairil-anwar-tuhanku-dalam-termenung-aku-masih"}, {"s": "doa", "q": "Amanat puisi tersebut adalah …", "o": ["Manusia harus selalu kembali dan berserah kepada Tuhan.", "Manusia harus berjuang sendiri tanpa bergantung pada Tuhan.", "Kehidupan harus dijalani dengan penuh ambisi duniawi.", "Manusia harus menghindari kesalahan dalam hidup.", "Kehidupan manusia sepenuhnya ditentukan oleh nasib."], "k": "A", "b": "Meski berada dalam keadaan terpuruk dan mengembara di negeri asing, aku lirik tetap kembali kepada Tuhan. Amanatnya: manusia hendaknya selalu kembali dan berserah kepada-Nya.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "doa", "q": "Unsur ekstrinsik yang paling dominan pada puisi tersebut adalah…", "o": ["Pengalaman hidup penyair yang penuh pergulatan batin.", "Kondisi ekonomi yang memengaruhi karya sastra.", "Budaya asing yang masuk dan menjadi pergulatan batin.", "Konflik politik yang menjadi pergulatan batin penulis.", "Perkembangan teknologi modern yang memengaruhi sastra."], "k": "A", "b": "Unsur ekstrinsik adalah faktor dari luar teks. Puisi ini lahir dari pergulatan batin dan pengalaman hidup penyair dalam hubungannya dengan Tuhan, bukan dari faktor ekonomi, budaya asing, politik, atau teknologi.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "doa", "q": "Nilai yang terkandung dalam puisi tersebut adalah ….", "o": ["nilai politik", "nilai sosial", "nilai ekonomi", "nilai budaya", "nilai religius"], "k": "E", "b": "Seluruh puisi berisi percakapan dan kerinduan kepada Tuhan (“Tuhanku”, “Di Pintu-Mu aku mengetuk”), sehingga nilai yang dominan adalah nilai religius.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "ibu", "q": "Latar belakang emosional penyair yang tergambar dalam puisi tersebut adalah ….", "o": ["pengalaman batin tentang kasih sayang ibu yang sangat mendalam dan berkesan", "konflik sosial yang terjadi antara anak dan orang tua dalam kehidupan keluarga", "keinginan penyair untuk mencapai kesuksesan dalam kehidupan duniawi", "tekanan ekonomi yang memengaruhi hubungan keluarga penyair", "pengalaman penyair dalam menghadapi lingkungan sosial yang keras"], "k": "A", "b": "Puisi memuji ibu sebagai mata air, gua pertapaan, dan pahlawan, serta mengungkapkan kerinduan dan rasa utang budi. Latar emosionalnya adalah pengalaman batin akan kasih sayang ibu yang mendalam.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "ibu", "q": "Hubungan latar belakang penyair dengan nilai puisi adalah …", "o": ["Budaya asing memengaruhi isi puisi yang disampaikan penulis.", "Kondisi ekonomi penyair memengaruhi nilai puisi yang ia sajikan.", "Latar sosial menentukan konflik dalam menyajikan puisi.", "Pengalaman hidup penyair melahirkan nilai kasih sayang yang kuat.", "Teknologi memengaruhi gaya bahasa penulis dalam menyajikan karya."], "k": "D", "b": "Pengalaman hidup penyair bersama ibunya melahirkan nilai kasih sayang yang kuat dalam puisi. Pilihan lain tidak didukung isi puisi.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "dipo", "q": "Tema puisi tersebut berkaitan dengan latar belakang penyair sebagai ….", "o": ["individu yang terpengaruh oleh semangat perjuangan kemerdekaan", "individu yang fokus pada kehidupan sosial masyarakat", "individu yang berorientasi pada kehidupan ekonomi", "individu yang menekankan hubungan keluarga", "individu yang mengutamakan kehidupan modern"], "k": "A", "b": "Puisi memuat kata “maju, serbu, serang, terjang” dan semangat melawan penindasan. Tema perjuangan ini berkaitan dengan penyair yang hidup pada masa perjuangan kemerdekaan.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": "dipo", "q": "Nilai kehidupan yang terkandung dalam puisi tersebut adalah ….", "o": ["pentingnya memiliki keberanian dalam menghadapi berbagai tantangan kehidupan", "pentingnya menjaga hubungan sosial yang harmonis dalam kehidupan masyarakat", "pentingnya bekerja keras untuk mencapai keberhasilan dalam kehidupan", "pentingnya menjaga keseimbangan dalam menjalani kehidupan sehari-hari", "pentingnya mengikuti perkembangan zaman dalam kehidupan modern"], "k": "A", "b": "Larik “tak gentar”, “lawan banyaknya seratus kali”, dan seruan maju menekankan keberanian menghadapi rintangan dan penindasan.", "intro": "Cermati kutipan puisi berikut!", "src": null}, {"s": null, "q": "Dalam rangka peringatan hari sastra, dua kelompok siswa menampilkan musikalisasi puisi karya Chairil Anwar. Kelompok pertama menampilkan puisi dengan iringan gitar dan biola yang selaras dengan suasana batin puisi, sehingga penonton merasakan emosi yang kuat dan memahami makna puisi secara mendalam. Sementara itu, kelompok kedua menambahkan berbagai efek musik modern yang dominan dan tidak sesuai dengan isi puisi, sehingga perhatian penonton lebih terfokus pada musik daripada makna puisi yang disampaikan.\n\nBerdasarkan kedua penampilan tersebut, manakah penilaian yang paling tepat terkait tujuan musikalisasi puisi?", "o": ["Musikalisasi puisi bertujuan memperindah penampilan dengan menonjolkan unsur musik dibandingkan isi puisi.", "Musikalisasi puisi sebaiknya mengutamakan variasi bunyi agar menarik perhatian penonton tanpa memperhatikan makna.", "Musikalisasi puisi bertujuan menggantikan peran teks puisi dengan unsur musik agar lebih komunikatif.", "Musikalisasi puisi bertujuan memperkuat penghayatan dan pemaknaan puisi melalui keselarasan antara unsur musik dan teks.", "Musikalisasi puisi hanya berfungsi sebagai hiburan tanpa berkaitan dengan penyampaian pesan puisi."], "k": "D", "b": "Kelompok pertama berhasil karena musik selaras dengan puisi sehingga makna dan emosi tersampaikan; kelompok kedua gagal karena musik mengalahkan makna. Tujuan musikalisasi puisi adalah memperkuat penghayatan dan pemaknaan puisi.", "intro": null, "src": null}, {"s": null, "q": "Dalam sebuah kegiatan literasi, siswa diminta membandingkan dua karya yang membahas isu sosial. Karya pertama berupa puisi yang menggunakan majas dan simbol untuk menyampaikan kritik terhadap ketidakadilan sosial secara halus, namun mampu menggugah emosi pembaca. Karya kedua berupa artikel yang menyajikan data lengkap dan penjelasan rinci mengenai masalah sosial tersebut, tetapi kurang menarik perhatian pembaca secara emosional.\n\nBerdasarkan kedua karya dalam narasi tersebut, manakah penilaian yang paling tepat mengenai efektivitas puisi sebagai media kritik sosial?", "o": ["Puisi lebih efektif karena menyampaikan pesan secara halus namun memiliki kekuatan makna yang mendalam.", "Puisi kurang efektif karena tidak menyampaikan pesan secara langsung kepada pembaca secara jelas.", "Puisi tidak efektif karena tidak menyajikan data lengkap mengenai kondisi sosial masyarakat secara menyeluruh.", "Puisi kurang efektif karena tidak menjelaskan masalah sosial secara rinci dan sistematis kepada pembaca.", "Puisi tidak efektif karena tidak menyampaikan peristiwa sosial secara kronologis kepada pembaca secara runtut."], "k": "A", "b": "Puisi mampu menggugah emosi dan menyampaikan kritik lewat majas dan simbol yang halus namun bermakna dalam. Pilihan B–E menilai puisi dengan ukuran artikel (data, rincian, kronologi), padahal fungsi dan karakter keduanya berbeda.", "intro": null, "src": null}, {"s": "p19", "q": "Seorang kritikus sastra menilai bahwa kedua puisi tersebut memiliki penekanan fungsi yang berbeda. Berdasarkan analisis fungsi puisi, manakah pernyataan yang paling tepat untuk mengevaluasi perbedaan fungsi estetis dan fungsi sosial pada kedua puisi tersebut?", "o": ["Fungsi estetis menonjolkan keindahan bahasa puitis, sedangkan fungsi sosial menonjolkan kritik terhadap kehidupan masyarakat.", "Fungsi estetis menonjolkan penyampaian fakta secara langsung, sedangkan fungsi sosial menonjolkan penggunaan bahasa yang imajinatif.", "Fungsi estetis menonjolkan struktur dan panjang puisi, sedangkan fungsi sosial menonjolkan pilihan kata dalam puisi.", "Fungsi estetis menonjolkan peran pembaca dalam memahami puisi, sedangkan fungsi sosial menonjolkan peran penyair dalam berkarya.", "Fungsi estetis menonjolkan isi puisi secara keseluruhan, sedangkan fungsi sosial menonjolkan bentuk dan tipografi puisi."], "k": "A", "b": "Puisi 1 (senja, luka, kata-kata menari) menonjolkan keindahan bahasa, yaitu fungsi estetis. Puisi 2 (suara rakyat terbungkam, menuntut hak) menonjolkan kritik terhadap kehidupan masyarakat, yaitu fungsi sosial.", "intro": "Cermati dua penggalan puisi berikut!", "src": null}, {"s": null, "q": "Seorang siswa menulis puisi tentang keresahan sosial, tetapi puisinya dinilai kurang menarik karena pilihan katanya datar, kurang imajinatif, dan tidak mampu menggugah perasaan pembaca. Guru kemudian meminta siswa tersebut mengevaluasi kembali karyanya agar menjadi puisi yang lebih berkualitas.\n\nBerdasarkan kondisi tersebut, manakah kriteria paling tepat yang harus dipenuhi agar puisi yang dihasilkan menjadi lebih baik?", "o": ["Mengolah bahasa secara imajinatif untuk menyampaikan gagasan secara menarik dan mampu menggugah perasaan pembaca.", "Menggunakan bahasa yang panjang agar terlihat kompleks dan menunjukkan tingkat kesulitan dalam penyusunan puisi.", "Menyusun kalimat seperti dalam teks ilmiah agar isi puisi tampak logis dan mudah dipahami pembaca.", "Menulis puisi dengan jumlah bait yang banyak agar isi puisi terlihat lengkap dan lebih meyakinkan pembaca.", "Menggunakan istilah teknis dalam setiap baris agar puisi terkesan ilmiah dan memiliki nilai akademis tinggi."], "k": "A", "b": "Kelemahan puisi siswa adalah diksi datar dan kurang imajinatif. Perbaikannya adalah mengolah bahasa secara imajinatif (diksi, majas, citraan) agar menggugah perasaan pembaca.", "intro": "Cermati pernyataan berikut!", "src": null}, {"s": "d21", "q": "Jika penggalan drama tersebut dilanjutkan, bagaimanakah kemungkinan perkembangan alur yang paling logis berdasarkan konflik yang telah disajikan…", "o": ["Raka sengaja membatalkan keputusannya secara tiba-tiba.", "Dina meninggalkan Raka karena ia merasa tidak percaya lagi.", "Raka dan Dina menghadapi konsekuensi dari keputusan mereka.", "Mereka melupakan masalah dan hidup seperti biasanya.", "Konflik secara langsung selesai tanpa hambatan yang berarti."], "k": "C", "b": "Raka akhirnya memutuskan ikut dengan Dina (“Apa pun yang terjadi”) dan mereka sepakat menghadapi bersama. Kelanjutan paling logis adalah keduanya menghadapi konsekuensi keputusan itu.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://www.facebook.com/groups/912480212703225/posts/1931474854137084/"}, {"s": "d21", "q": "Keterkaitan antara tema dan alur dalam drama tersebut adalah….", "o": ["alur tidak mendukung tema melalui konflik batin tokoh", "alur memperkuat tema melalui konflik batin tokoh", "tema tidak terlihat dalam alur pada penggalan drama tersebut", "alur hanya sebagai pelengkap dalam konflik drama tersebut", "tema bertentangan dengan alur dan tidak tergambar jelas"], "k": "B", "b": "Tema tentang keberanian mengambil keputusan di tengah ketakutan tampak jelas dalam alur: keraguan Raka, dorongan Dina, lalu keputusan di akhir. Konflik batin tokoh memperkuat tema.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://www.facebook.com/groups/912480212703225/posts/1931474854137084/"}, {"s": "d23", "q": "Sikap Ayah dalam teks tersebut dipengaruhi oleh nilai budaya yang….", "o": ["menjunjung tinggi kebebasan individu", "mengutamakan pendidikan tinggi untuk masa depan", "membatasi peran perempuan di ruang publik", "menolak perubahan sosial yang berkelanjutan", "mengedepankan persaingan, mengutamakan perubahan"], "k": "C", "b": "Ayah berkata “Kamu itu perempuan… sebaiknya dekat dengan keluarga”, yang mencerminkan nilai budaya yang membatasi ruang gerak perempuan di ruang publik.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://id.scribd.com/document/701688145/MAM-MARDIS"}, {"s": "d24", "q": "Perhatian terhadap waktu ibadah menunjukkan adanya penghargaan terhadap keberagaman….", "o": ["profesi", "adat istiadat", "agama", "etnis", "sosial"], "k": "C", "b": "Ibadah berkaitan dengan agama. Rina meminta acara tidak bertabrakan dengan waktu ibadah, berarti menghargai keberagaman agama.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://share.google/aimode/xxSlwHzo9NpyKQjc4"}, {"s": "d24", "q": "Makna yang terkandung dalam pernyataan “keberagaman dapat saling melengkapi” adalah….", "o": ["perbedaan harus dihindari", "perbedaan adalah kelemahan", "keberagaman merupakan kekuatan sosial", "semua harus sama", "tidak perlu aturan"], "k": "C", "b": "Pernyataan Bu Made menunjukkan perbedaan etnis, agama, dan profesi justru saling melengkapi sehingga menjadi kekuatan sosial.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://share.google/aimode/xxSlwHzo9NpyKQjc4"}, {"s": "d26", "q": "Jika dilihat dari perspektif sosial, percakapan tersebut mencerminkan bahwa keberagaman ….", "o": ["menjadi penghambat interaksi sosial satu sama lain", "harus diseragamkan agar tidak memicu timbulnya konflik", "dapat memperkuat hubungan jika dikelola dengan sikap toleran", "tidak berpengaruh dalam kehidupan sehari-hari", "hanya berlaku dalam konteks tertentu di kehidupan sehari-hari"], "k": "C", "b": "Para tokoh berbeda budaya, agama, dan pekerjaan orang tua, tetapi saling menghargai dan justru merasa seru. Keberagaman memperkuat hubungan bila disikapi dengan toleransi.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://id.scribd.com/document/891794767/SIBI-Nonteks"}, {"s": "d27", "q": "Pesan moral utama yang dapat diambil dari penggalan drama tersebut adalah…", "o": ["Perbedaan cara kerja harus dihindari agar pekerjaan cepat selesai.", "Setiap individu sebaiknya mempertahankan pendapatnya sendiri.", "Perbedaan pendapat dapat disatukan melalui komunikasi yang baik.", "Kerja kelompok sebaiknya dihindari karena sering menimbulkan konflik.", "Keputusan terbaik ditentukan oleh satu orang dalam kelompok."], "k": "C", "b": "Rendi dan Nina mengajak saling mendengarkan dan bekerja sama; Dika akhirnya berpikir ulang. Pesannya: perbedaan dapat disatukan dengan komunikasi yang baik.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://id.scribd.com/document/515189344/Rasa-Yang-Terhenti-Autosaved"}, {"s": "d27", "q": "Relevansi pesan moral dalam drama tersebut dengan kehidupan nyata adalah…", "o": ["Tidak memiliki kaitan dengan kehidupan sehari-hari", "Hanya berlaku dalam kegiatan belajar di sekolah", "Pentingnya sikap saling menghargai dalam kerja sama sosial", "Menunjukkan bahwa konflik tidak dapat dihindari", "Menjelaskan bahwa perbedaan selalu menimbulkan masalah"], "k": "C", "b": "Sikap saling menghargai dan mendengarkan berlaku dalam semua bentuk kerja sama sosial (keluarga, kerja, masyarakat), tidak terbatas pada sekolah.", "intro": "Bacalah penggalan teks drama berikut dengan saksama !", "src": "Sumber : https://id.scribd.com/document/515189344/Rasa-Yang-Terhenti-Autosaved"}, {"s": "d29", "q": "Makna simbolik dari “panggung kosong” yang ditatap Arga adalah…", "o": ["Ruang refleksi untuk memahami peran secara mendalam", "Ketiadaan penonton saat latihan berlangsung", "Tidak adanya properti dalam pertunjukan drama", "Kesalahan dalam pengaturan panggung pertunjukan", "Kondisi panggung yang belum siap digunakan"], "k": "A", "b": "Setelah dialog dengan Maya, Arga menatap panggung kosong lalu berdiri dengan yakin. Panggung kosong melambangkan ruang untuk merenung dan memahami peran secara mendalam.", "intro": "Bacalah penggalan teks drama berikut !", "src": "Sumber : https://share.google/aimode/kAV4fgl2YUPJ3VhRv"}, {"s": "d29", "q": "Jika Arga tidak memahami makna perannya, dampak yang paling mungkin adalah…", "o": ["Pertunjukan tetap berjalan tanpa perubahan makna", "Penonton kesulitan merasakan emosi yang ingin disampaikan", "Alur cerita menjadi lebih sederhana untuk dipahami", "Penonton lebih fokus pada dekorasi panggung", "Dialog menjadi lebih menarik untuk didengarkan"], "k": "B", "b": "Menurut Maya, penonton merasakan kejujuran pemeran. Tanpa pemahaman peran, emosi dan makna sulit tersampaikan.", "intro": "Bacalah penggalan teks drama berikut !", "src": "Sumber : https://share.google/aimode/kAV4fgl2YUPJ3VhRv"}, {"s": "t31", "q": "Makna moral dari konflik yang terjadi dalam pertunjukan tersebut adalah…", "o": ["Perbedaan harus dihilangkan agar tidak menimbulkan masalah", "Konflik menunjukkan bahwa kerja kelompok tidak diperlukan", "Konflik dapat menjadi sarana pembelajaran dalam kerja sama", "Perbedaan selalu menimbulkan kerugian dalam kelompok", "Setiap individu sebaiknya bekerja secara mandiri"], "k": "C", "b": "Konflik berakhir dengan kesadaran untuk saling mendengarkan dan menghargai, sehingga konflik menjadi sarana belajar bekerja sama.", "intro": "Bacalah teks berikut !", "src": null}, {"s": "d32", "q": "Pesan moral dari pernyataan Lukman menunjukkan bahwa…", "o": ["Setiap anggota kelompok memiliki hak untuk menyampaikan pendapatnya.", "Diskusi kelompok hanya efektif jika dipimpin oleh satu orang.", "Perbedaan pendapat dapat memperlambat penyelesaian tugas.", "Keputusan terbaik berasal dari pendapat yang paling kuat.", "Konflik dalam kelompok tidak perlu diselesaikan secara bersama."], "k": "A", "b": "Lukman berkata “Semua orang berhak didengar dalam kelompok ini”, yang berarti setiap anggota berhak menyampaikan pendapat.", "intro": "Bacalah dialog berikut dengan saksama!", "src": "Sumber :https://repositori.kemendikdasmen.go.id/.pdf"}, {"s": "t31", "q": "Pesan moral yang ditunjukkan melalui perubahan sikap tokoh di akhir cerita adalah…", "o": ["Konflik harus diselesaikan dengan cara menghindari komunikasi.", "Perbedaan pendapat dapat disatukan melalui sikap saling menghargai.", "Setiap individu harus mempertahankan pendapatnya masing-masing.", "Diskusi kelompok tidak efektif dalam mencapai tujuan bersama.", "Keputusan kelompok sebaiknya ditentukan oleh satu orang."], "k": "B", "b": "Di akhir cerita para tokoh berdiskusi dengan terbuka dan saling menghargai, sehingga pesannya perbedaan pendapat dapat disatukan lewat sikap saling menghargai.", "intro": "Bacalah teks berikut !", "src": null}, {"s": "t34", "q": "Strategi promosi yang paling tepat untuk meningkatkan jumlah penonton adalah…", "o": ["Membuat poster sederhana tanpa variasi desain visual.", "Mengandalkan satu media promosi tanpa kombinasi media lain.", "Menggabungkan poster, video, dan media sosial secara terintegrasi.", "Menyebarkan informasi secara lisan tanpa media pendukung.", "Menunggu penonton datang tanpa melakukan promosi."], "k": "C", "b": "Kegagalan sebelumnya akibat promosi kurang menarik. Memadukan poster, video pendek, dan media sosial menjangkau audiens lebih luas dan lebih menarik.", "intro": "Bacalah teks berikut !", "src": null}, {"s": "t35", "q": "Agar pesan moral dalam pertunjukan tersampaikan secara kuat, tim sebaiknya…", "o": ["Mengurangi konflik agar cerita lebih mudah dipahami penonton.", "Menampilkan adegan secara cepat tanpa pendalaman karakter tokoh.", "Memperkuat penghayatan peran dan ekspresi dalam adegan kunci.", "Mengutamakan dekorasi panggung dibandingkan kualitas akting.", "Menyederhanakan cerita tanpa memperhatikan pesan yang disampaikan."], "k": "C", "b": "Teks menyebut adegan kurang kuat secara emosional sehingga pesan moral kurang tersampaikan. Solusinya memperkuat penghayatan dan ekspresi, terutama pada adegan kunci.", "intro": "Bacalah teks berikut !", "src": null}, {"s": "t35", "q": "Pendapat yang lebih menekankan kualitas pertunjukan dibanding promosi dapat dinilai…", "o": ["Tepat sepenuhnya karena promosi tidak memengaruhi jumlah penonton.", "Kurang tepat karena promosi tetap diperlukan untuk menarik audiens.", "Tidak relevan karena kualitas pertunjukan tidak penting.", "Tepat karena penonton hanya menilai dari isi pertunjukan.", "Tidak memiliki pengaruh terhadap keberhasilan pementasan."], "k": "B", "b": "Pementasan sebelumnya berkualitas cukup baik tetapi sepi penonton karena promosi lemah. Jadi promosi tetap diperlukan; kualitas dan promosi saling melengkapi.", "intro": "Bacalah teks berikut !", "src": null}, {"s": "t37", "q": "Dalam mengadaptasi cerita tersebut menjadi naskah drama, fokus konflik yang paling kuat untuk dikembangkan adalah…", "o": ["Proses Arman menemukan dompet di lingkungan sekolah.", "Interaksi Arman dengan teman-temannya setelah menemukan dompet.", "Pergulatan batin Arman antara kebutuhan pribadi dan nilai kejujuran.", "Reaksi pemilik dompet setelah menerima kembali barangnya.", "Latar tempat kejadian yang terjadi di lingkungan sekolah."], "k": "C", "b": "Inti cerita adalah dilema Arman antara kebutuhan pribadi dan kejujuran (konflik batin). Inilah yang paling kuat dikembangkan menjadi drama.", "intro": "Bacalah teks berikut !", "src": null}, {"s": "t37", "q": "Perubahan dari bentuk cerpen ke naskah drama menuntut penulis untuk…", "o": ["Mempertahankan seluruh narasi tanpa perubahan.", "Mengubah narasi menjadi dialog dan aksi yang dapat dipentaskan.", "Mengurangi konflik agar mudah dipahami penonton.", "Menyederhanakan cerita tanpa memperhatikan struktur drama.", "Menghilangkan unsur emosional dalam cerita dan dipentaskan."], "k": "B", "b": "Drama dipentaskan, sehingga narasi cerpen harus diubah menjadi dialog, petunjuk laku, dan aksi yang dapat diperagakan.", "intro": "Bacalah teks berikut !", "src": null}, {"s": "t39", "q": "Penggalan cerpen di atas akan diubah menjadi naskah drama. Manakah penggalan naskah drama yang paling tepat?", "o": ["(Arman berjalan di koridor sekolah sendirian.) Arman: “Ada dompet di lantai, isinya banyak uang. Aku sedang butuh uang buat beli buku.”", "(Arman memegang uang dengan tangan gemetar.) Arman: “Aku butuh buku ini, tapi Ayah selalu berpesan agar aku selalu menjaga kejujuran.”", "(Arman membuka dompet dan tersenyum tenang.) Arman: “Ini milik teman sekolahku. Aku harus segera mencari pemiliknya agar dia tidak merasa khawatir.”", "(Arman duduk terdiam memandangi kartu identitas.) Arman: “Uang ini sangat banyak, namun aku tidak berani mengambilnya karena takut ada yang melihat.”"], "k": "B", "b": "Penggalan cerpen memuat kebimbangan karena butuh uang dan teringat nasihat kejujuran orang tua. Opsi B memuat keduanya dalam dialog dan petunjuk laku (tangan gemetar). A hanya menggambarkan penemuan, C sudah menyelesaikan konflik, D alasannya takut ketahuan, bukan nasihat orang tua. (Catatan: soal ini hanya memiliki opsi A–D.)", "intro": "Bacalah teks berikut !", "src": null}, {"s": "t39", "q": "Berdasarkan ilustrasi pergulatan batin Arman, jika Anda harus menyusun sebuah adegan klimaks dalam bentuk naskah drama, manakah rancangan dialog dan petunjuk laku (kramagung) yang paling kuat untuk menggambarkan puncak konflik tersebut?", "o": ["Arman menatap uang itu cukup lama lalu segera berlari mencari guru piket.", "Tangan Arman gemetar hebat saat menyentuh uang sambil membayangkan wajah kecewa ayahnya.", "Arman tersenyum lebar melihat jumlah uang yang sangat banyak di dalam dompet.", "Arman menghela napas panjang kemudian memasukkan kembali dompet tersebut ke dalam saku.", "Arman memanggil temannya untuk meminta saran mengenai apa yang harus ia lakukan."], "k": "B", "b": "Klimaks adalah puncak ketegangan batin. Opsi B menampilkan ketegangan (gemetar hebat) sekaligus tarik-menarik antara godaan uang dan bayangan kekecewaan ayah. A dan D sudah masuk penyelesaian, C tidak ada konflik, E mengalihkan konflik ke tokoh lain.", "intro": "Bacalah teks berikut !", "src": null}]};
+/* Teks puisi karya penyair tidak disertakan di sini. Untuk menampilkannya, isi daftar baris di bawah ini,
+   misalnya PUISI.pesolek=["Baris 1","Baris 2"]. Kunci yang tersedia: pesolek, senja, aku, doa, ibu, dipo. */
+const PUISI={};
+const S=DATA.S,Q=DATA.Q,N=Q.length,DURASI=90*60*1000,KEY="tryout-tka-xi-v1",L="ABCDE";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const st={screen:"start",student:{nama:"",kelas:"XI",nomor:"",sekolah:""},idx:0,ans:Array(N).fill(null),ragu:Array(N).fill(false),startAt:0,endAt:0,finishAt:0,confirm:false,filter:"all",err:""};
+const $=id=>document.getElementById(id);
+let timerId=null;
+
+function save(){try{if(st.screen==="exam")localStorage.setItem(KEY,JSON.stringify({student:st.student,idx:st.idx,ans:st.ans,ragu:st.ragu,startAt:st.startAt,endAt:st.endAt}))}catch(e){}}
+function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
+function restore(){try{const d=JSON.parse(localStorage.getItem(KEY)||"null");if(d&&d.endAt>Date.now()&&Array.isArray(d.ans)&&d.ans.length===N){Object.assign(st,d,{screen:"exam"});return true}}catch(e){}return false}
+
+const fmt=ms=>{const s=Math.max(0,Math.round(ms/1000));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+":":"")+String(m).padStart(2,"0")+":"+String(x).padStart(2,"0")};
+const counts=()=>{let a=0,r=0,b=0;for(let i=0;i<N;i++){if(st.ragu[i])r++;else if(st.ans[i]!==null)a++;else b++}return{answered:st.ans.filter(x=>x!==null).length,a,ragu:r,blank:b}};
+
+function stim(key){
+  const s=S[key];let h="";
+  if(s.kind==="poem"){
+    const pl=PUISI[key];
+    h=`<div class="stim"><h3>${esc(s.title)}</h3>`+(pl&&pl.length?`<div class="verse">`+pl.map(l=>`<p>${esc(l)}</p>`).join("")+`</div>`:`<div class="ph">Teks puisi belum dimasukkan. Isi daftar PUISI di bagian atas skrip aplikasi.${s.extra?" "+esc(s.extra):""}</div>`)+`</div>`;
+  }else if(s.kind==="drama"){
+    h=`<div class="stim"><h3>${esc(s.title)}</h3>`+s.lines.map(l=>{
+      if(/^\(/.test(l))return`<p class="dir">${esc(l)}</p>`;
+      const m=l.match(/^(.{1,24}?) : (.*)$/);
+      return m?`<p class="dl"><b>${esc(m[1])}</b><span>${esc(m[2])}</span></p>`:`<p>${esc(l)}</p>`}).join("")+`</div>`;
+  }else if(s.kind==="verse"){
+    h=`<div class="stim"><h3>${esc(s.title)}</h3><div class="verse">`+s.lines.map(l=>`<p>${esc(l)}</p>`).join("")+`</div></div>`;
+  }else{
+    h=`<div class="stim prose">`+s.lines.map(l=>`<p>${esc(l)}</p>`).join("")+`</div>`;
+  }
+  return h;
+}
+const blk=q=>(q.intro?`<p class="intro">${esc(q.intro)}</p>`:"")+(q.s?stim(q.s):"")+(q.src?`<p class="src">${esc(q.src.replace(/^Sumber\s*:\s*/,"Sumber: "))}</p>`:"");
+const qtext=q=>q.q.split("\n\n").map(p=>`<p>${esc(p)}</p>`).join("");
+
+/* ---------- layar identitas ---------- */
+function renderStart(){
+  const s=st.student;
+  $("app").innerHTML=`
+  <main class="start">
+    <section class="hero"><div class="hero-in">
+      <p class="eyebrow">Asesmen Sumatif · TP 2025/2026</p>
+      <h1>Try Out TKA</h1>
+      <p class="sub">Bahasa Indonesia untuk Kelas XI. Kerjakan sendiri, lihat nilai dan pembahasan setelah selesai.</p>
+      <ul class="facts"><li><b>${N}</b><span>soal</span></li><li><b>90</b><span>menit</span></li><li><b>A–E</b><span>pilihan ganda</span></li></ul>
+      <div class="demo" aria-label="Arti warna nomor soal">
+        <span><i class="chip ans"></i>Sudah dijawab</span><span><i class="chip ragu"></i>Ragu-ragu</span><span><i class="chip none"></i>Belum dijawab</span>
+      </div>
+    </div></section>
+    <section class="formside"><form class="card" id="f" novalidate>
+      <div><h2 style="font-size:26px">Isi data peserta</h2><p class="note" style="margin-top:6px">Data ini tampil lagi di halaman nilai akhir.</p></div>
+      <div class="field"><label for="nama">Nama Siswa</label><input id="nama" autocomplete="name" placeholder="Nama lengkap" value="${esc(s.nama)}"></div>
+      <div class="field"><label for="kelas">Kelas</label><input id="kelas" placeholder="Contoh: XI IPA 2" value="${esc(s.kelas)}"></div>
+      <div class="field"><label for="nomor">Peserta Didik (NIS / Nomor Peserta)</label><input id="nomor" inputmode="numeric" placeholder="Nomor induk atau nomor peserta" value="${esc(s.nomor)}"></div>
+      <div class="field"><label for="sekolah">Asal Sekolah</label><input id="sekolah" autocomplete="organization" placeholder="Nama sekolah" value="${esc(s.sekolah)}"></div>
+      <p class="errmsg" id="err" role="alert">${esc(st.err)}</p>
+      <button class="btn" type="submit">Mulai Try Out</button>
+      <p class="note">Waktu 90 menit mulai berjalan setelah tombol ditekan. Saat waktu habis, jawaban dikumpulkan otomatis.</p>
+    </form></section>
+  </main>`;
+  ["nama","kelas","nomor","sekolah"].forEach(k=>$(k).addEventListener("input",e=>{st.student[k]=e.target.value;e.target.classList.remove("err")}));
+  $("f").addEventListener("submit",e=>{
+    e.preventDefault();
+    const miss=["nama","kelas","nomor","sekolah"].filter(k=>!st.student[k].trim());
+    if(miss.length){miss.forEach(k=>$(k).classList.add("err"));st.err="Lengkapi semua data peserta sebelum mulai.";$("err").textContent=st.err;$(miss[0]).focus();return}
+    st.err="";
+    Object.keys(st.student).forEach(k=>st.student[k]=st.student[k].trim());
+    st.ans=Array(N).fill(null);st.ragu=Array(N).fill(false);st.idx=0;
+    st.startAt=Date.now();st.endAt=st.startAt+DURASI;st.confirm=false;st.screen="exam";
+    save();render();
+  });
+}
+
+/* ---------- layar ujian ---------- */
+function renderExam(){
+  const i=st.idx,q=Q[i],c=counts(),last=i===N-1;
+  const nav=Q.map((_,k)=>`<button class="n${st.ragu[k]?" ragu":st.ans[k]!==null?" ans":""}${k===i?" cur":""}" data-go="${k}" aria-label="Soal ${k+1}${st.ragu[k]?", ragu-ragu":st.ans[k]!==null?", sudah dijawab":", belum dijawab"}"${k===i?' aria-current="true"':""}>${k+1}</button>`).join("");
+  $("app").innerHTML=`
+  <header class="bar"><div class="wrap">
+    <div class="brand"><b>Try Out TKA</b><span>${esc(st.student.nama)} · ${esc(st.student.kelas)}</span></div>
+    <div class="prog"><span class="tnum">Soal ${i+1} dari ${N} · ${c.answered} terjawab</span><div class="track"><i style="width:${c.answered/N*100}%"></i></div></div>
+    <div class="timer" id="timer" role="timer" aria-label="Sisa waktu"><small>Sisa waktu</small><b class="tnum" id="tv">${fmt(st.endAt-Date.now())}</b></div>
+  </div></header>
+  <div class="wrap exam">
+    <main class="card qcard">
+      <div class="qhead"><span class="qno">Soal ${i+1}</span>${st.ragu[i]?'<span class="tag">Ragu-ragu</span>':""}</div>
+      ${blk(q)}
+      <div class="qtext">${qtext(q)}</div>
+      <div class="opts" role="radiogroup" aria-label="Pilihan jawaban">
+        ${q.o.map((o,k)=>`<label class="opt${st.ans[i]===k?" sel":""}"><input type="radio" name="o" value="${k}"${st.ans[i]===k?" checked":""}><span class="l">${L[k]}</span><span class="t">${esc(o)}</span></label>`).join("")}
+      </div>
+      <div class="nav3">
+        <button class="btn ghost" id="prev"${i===0?" disabled":""}>← Sebelumnya</button>
+        <div class="mid">
+          <button class="btn ragu${st.ragu[i]?" on":""}" id="rg" aria-pressed="${st.ragu[i]}">Ragu-ragu</button>
+          ${st.ans[i]!==null?'<button class="link" id="clr">Hapus jawaban</button>':""}
+        </div>
+        ${last?'<button class="btn warn" id="fin">Selesai</button>':'<button class="btn" id="next">Selanjutnya →</button>'}
+      </div>
+    </main>
+    <aside class="card aside">
+      <h2>Navigasi soal</h2>
+      <div class="grid">${nav}</div>
+      <ul class="leg">
+        <li><i class="chip ans"></i>Dijawab (${c.a})</li>
+        <li><i class="chip ragu"></i>Ragu-ragu (${c.ragu})</li>
+        <li><i class="chip none"></i>Belum (${c.blank})</li>
+        <li><i class="chip cur"></i>Sedang dibuka</li>
+      </ul>
+      <button class="btn warn" id="fin2">Akhiri Try Out</button>
+    </aside>
+  </div>
+  ${st.confirm?dialog(c):""}`;
+  tick();
+  document.querySelectorAll("input[name=o]").forEach(r=>r.addEventListener("change",e=>{st.ans[i]=+e.target.value;save();render()}));
+  document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>go(+b.dataset.go)));
+  $("prev").onclick=()=>go(i-1);
+  const nx=$("next");if(nx)nx.onclick=()=>go(i+1);
+  $("rg").onclick=()=>{st.ragu[i]=!st.ragu[i];save();render()};
+  const cl=$("clr");if(cl)cl.onclick=()=>{st.ans[i]=null;save();render()};
+  const f1=$("fin");if(f1)f1.onclick=()=>{st.confirm=true;render()};
+  $("fin2").onclick=()=>{st.confirm=true;render()};
+  if(st.confirm){$("back").onclick=()=>{st.confirm=false;render()};$("done").onclick=finish;$("back").focus()}
+}
+function dialog(c){
+  const sisa=c.blank+c.ragu;
+  return`<div class="veil" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="card dialog">
+    <h2 id="dt">Selesaikan Try Out?</h2>
+    <div class="sum"><div><b>${c.a}</b><span>Dijawab</span></div><div class="r"><b>${c.ragu}</b><span>Ragu-ragu</span></div><div><b>${c.blank}</b><span>Belum dijawab</span></div></div>
+    <p>${sisa?`Masih ada ${c.blank?c.blank+" soal belum dijawab":""}${c.blank&&c.ragu?" dan ":""}${c.ragu?c.ragu+" soal ditandai ragu-ragu":""}. Setelah diselesaikan, jawaban tidak bisa diubah.`:"Semua soal sudah dijawab. Setelah diselesaikan, jawaban tidak bisa diubah."}</p>
+    <div class="row"><button class="btn ghost" id="back">Kembali mengerjakan</button><button class="btn warn" id="done">Ya, selesaikan</button></div>
+  </div></div>`;
+}
+function go(k){if(k<0||k>=N)return;st.idx=k;save();render();window.scrollTo({top:0})}
+function tick(){
+  const t=$("tv");if(!t)return;
+  const left=st.endAt-Date.now();
+  t.textContent=fmt(left);
+  $("timer").classList.toggle("low",left<=10*60*1000);
+  if(left<=0)finish();
+}
+function finish(){
+  if(st.screen!=="exam")return;
+  st.finishAt=Math.min(Date.now(),st.endAt);st.screen="result";st.confirm=false;st.filter="all";
+  clearSave();render();window.scrollTo({top:0});
+}
+
+/* ---------- layar hasil ---------- */
+function renderResult(){
+  let ok=0,bad=0,blank=0;
+  Q.forEach((q,i)=>{if(st.ans[i]===null)blank++;else if(L[st.ans[i]]===q.k)ok++;else bad++});
+  const score=Math.round(ok/N*1000)/10;
+  const s=st.student;
+  const stat=i=>{const a=st.ans[i];return a===null?"empty":L[a]===Q[i].k?"ok":"bad"};
+  const list=Q.map((q,i)=>({q,i,t:stat(i)})).filter(x=>st.filter==="all"||x.t===st.filter);
+  const label={ok:"Benar",bad:"Salah",empty:"Tidak dijawab"};
+  const items=list.map(({q,i,t})=>{
+    const ki=L.indexOf(q.k),ai=st.ans[i];
+    return`<article class="card item" id="r${i+1}">
+      <div class="ihead"><span class="qno">Soal ${i+1}</span><span class="badge ${t}">${label[t]}</span></div>
+      ${blk(q)}
+      <div class="qtext">${qtext(q)}</div>
+      <div class="ropts">${q.o.map((o,k)=>`<div class="ro${k===ki?" key":k===ai?" wrong":""}"><span class="l">${L[k]}</span><span class="t">${esc(o)}</span><span class="m">${k===ki?"Kunci"+(k===ai?" · jawabanmu":""):k===ai?"Jawabanmu":""}</span></div>`).join("")}</div>
+      ${t==="empty"?'<p class="nokey">Kamu belum menjawab soal ini. Kunci jawaban: '+esc(q.k)+".</p>":""}
+      <div class="why"><b>Pembahasan</b>${esc(q.b)}</div>
+    </article>`}).join("");
+  const tgl=new Date(st.finishAt).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+  $("app").innerHTML=`
+  <header class="rhero"><div class="wrap">
+    <div class="score" style="--p:${score}"><div><b class="tnum">${score%1===0?score:score.toFixed(1)}</b><span>Nilai akhir</span></div></div>
+    <div class="who"><p class="eyebrow">Hasil Try Out TKA · Bahasa Indonesia XI</p><h1>${esc(s.nama)}</h1>
+      <dl><dt>Kelas</dt><dd>${esc(s.kelas)}</dd><dt>Peserta didik</dt><dd>${esc(s.nomor)}</dd><dt>Asal sekolah</dt><dd>${esc(s.sekolah)}</dd><dt>Tanggal</dt><dd>${tgl}</dd><dt>Waktu pengerjaan</dt><dd class="tnum">${fmt(st.finishAt-st.startAt)} dari 1:30:00</dd></dl></div>
+  </div></header>
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat g"><b class="tnum">${ok}</b><span>Jawaban benar</span></div>
+      <div class="stat b"><b class="tnum">${bad}</b><span>Jawaban salah</span></div>
+      <div class="stat"><b class="tnum">${blank}</b><span>Tidak dijawab</span></div>
+      <div class="stat"><b class="tnum">${N}</b><span>Total soal</span></div>
+    </div>
+    <section class="rev">
+      <div class="rev-head"><h2>Pembahasan soal</h2>
+        <div class="filters" role="group" aria-label="Saring pembahasan">
+          ${[["all","Semua ("+N+")"],["ok","Benar ("+ok+")"],["bad","Salah ("+bad+")"],["empty","Kosong ("+blank+")"]].map(([k,v])=>`<button class="f" data-f="${k}" aria-pressed="${st.filter===k}">${v}</button>`).join("")}
+        </div></div>
+      ${items||'<p class="nokey">Tidak ada soal pada kategori ini.</p>'}
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="again">Ulangi Try Out</button><button class="btn ghost" id="top">Kembali ke atas</button></div>
+    </section>
+  </div>`;
+  document.querySelectorAll("[data-f]").forEach(b=>b.addEventListener("click",()=>{st.filter=b.dataset.f;render()}));
+  $("again").onclick=()=>{st.screen="start";st.err="";clearSave();render();window.scrollTo({top:0})};
+  $("top").onclick=()=>window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function render(){st.screen==="start"?renderStart():st.screen==="exam"?renderExam():renderResult()}
+restore();render();
+timerId=setInterval(()=>{if(st.screen==="exam")tick()},1000);
+</script>
+
+</body></html>
